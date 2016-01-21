@@ -1,0 +1,46 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "HAVOC AutoScalingGroup",
+
+  "Metadata": {"AWS::CloudFormation::Interface":{"ParameterGroups":[{"Label":{"default":"HAVOC Configuration"},"Parameters":["SSHKeyPair","InstanceType","AMI","ASGMin","ASGMax"]},{"Label":{"default":"HAVOC Configuration"},"Parameters":["SSHKeyPair","InstanceType","AMI","ASGMin","ASGMax"]}],"ParameterLabels":{"SSHKeyPair":{"default":"SSH Key Pair"},"InstanceType":{"default":"ASG EC2 Type"},"AMI":{"default":"EC2 AMI"},"ASGMin":{"default":"ASG Min"},"ASGMax":{"default":"ASG Max"}}}},
+
+  "Parameters": {
+    "VPCId"         : {"Type":"AWS::EC2::VPC::Id","Description":"VPC to deploy to","ConstraintDescription":"Must be an existing VPC"},
+    "VPCCIDR"       : {"Type":"String","Description":"VPC CIDR for ssh access"},
+    "VPCSubnetINT1" : {"Type":"AWS::EC2::Subnet::Id","Description":"First internal subnet."},
+    "VPCSubnetINT2" : {"Type":"AWS::EC2::Subnet::Id","Description":"Second internal subnet."},
+    "VPCSubnetEXT1" : {"Type":"AWS::EC2::Subnet::Id","Description":"First external subnet."},
+    "VPCSubnetEXT2" : {"Type":"AWS::EC2::Subnet::Id","Description":"Second external subnet."},
+
+    "SSHKeyPair"    : {"Type":"AWS::EC2::KeyPair::KeyName","Description":"Select the name of a pre-created SSH Key used for instance OS access.","ConstraintDescription":"Must be the name of an existing EC2 KeyPair."},
+    "InstanceType"  : {"Description":"Amazon EC2 instance type for the Havoc ASG","Type":"String","Default":"t2.medium","AllowedValues":["t2.small","t2.medium","t2.large"],"ConstraintDescription":"Must be either t2.small, t2.medium or t2.large."},
+    "AMI"           : {"Type":"AWS::EC2::Image::Id","Description":"AMI for LaunchConfig","Default":"ami-60b6c60a","ConstraintDescription":"Must be a valid AMI for this region"},
+    "ASGMin"        : {"Description":"Autoscale Group Minimum size","Type":"Number","Default":"1","ConstraintDescription":"Must be a resonable number."},
+    "ASGMax"        : {"Description":"Autoscale Group Maximum size","Type":"Number","Default":"10","ConstraintDescription":"Must be a resonable number."}
+},
+
+
+  "Conditions" : {},
+
+
+  "Mappings": {},
+
+
+  "Resources": {
+
+    "LogRole"              : {"Type":"AWS::IAM::Role","Properties":{"AssumeRolePolicyDocument":{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":["ec2.amazonaws.com"]},"Action":["sts:AssumeRole"]}]},"Path":"/","Policies":[{"PolicyName":"LogPolicy","PolicyDocument":{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["logs:CreateLogGroup","logs:CreateLogStream","logs:PutLogEvents","logs:DescribeLogStreams"],"Resource":["arn:aws:logs:*:*:*"]}]}}]}},
+    "InstanceProfileLog"   : {"Type":"AWS::IAM::InstanceProfile","Properties":{"Path":"/","Roles":[{"Ref":"LogRole"}]}},
+    "HavocASG"             : {"Type":"AWS::AutoScaling::AutoScalingGroup","Properties":{"Cooldown":"30","HealthCheckGracePeriod":"300","HealthCheckType":"ELB","VPCZoneIdentifier":[{"Ref":"VPCSubnetINT1"},{"Ref":"VPCSubnetINT2"}],"LaunchConfigurationName":{"Ref":"HavocLG"},"LoadBalancerNames":[{"Ref":"HavocELB"}],"MinSize":{"Ref":"ASGMin"},"MaxSize":{"Ref":"ASGMax"},"Tags":[{"Key":"ServiceProvider","Value":"Rackspace","PropagateAtLaunch":"True"},{"Key":"Name","Value":"HAVOC-ASG","PropagateAtLaunch":"True"}]}},
+    "HavocSG"              : {"Type":"AWS::EC2::SecurityGroup","Properties":{"GroupDescription":"Security Group for HAVOC","VpcId":{"Ref":"VPCId"},"Tags":[{"Key":"ServiceProvider","Value":"Rackspace"},{"Key":"Name","Value":"HAVOC-SG"}],"SecurityGroupIngress":[{"IpProtocol":"tcp","FromPort":"22","ToPort":"22","CidrIp":{"Ref":"CidrIp"}},{"IpProtocol":"tcp","FromPort":"8080","ToPort":"8080","SourceSecurityGroupId":{"Ref":"HavocELBSG"}}]}},
+    "HavocELB"             : {"Type":"AWS::ElasticLoadBalancing::LoadBalancer","Properties":{"CrossZone":"True","HealthCheck":{"HealthyThreshold":"10","Interval":"10","Target":"TCP:8080","Timeout":"5","UnhealthyThreshold":"2"},"LoadBalancerName":"HAVOC-ELB","Listeners":[{"InstancePort":"8080","InstanceProtocol":"HTTP","LoadBalancerPort":"80","Protocol":"HTTP"}],"Scheme":"internet-facing","SecurityGroups":[{"Ref":"HavocSG"}],"Subnets":[{"Ref":"VPCSubnetEXT2"},{"Ref":"VPCSubnetEXT1"}],"Tags":[{"Key":"ServiceProvider","Value":"Rackspace"},{"Key":"Name","Value":"HAVOC-ELB"}]}},
+    "HavocELBSG"           : {"Type":"AWS::EC2::SecurityGroup","Properties":{"GroupDescription":"Security Group for HAVOC","VpcId":{"Ref":"VPCId"},"Tags":[{"Key":"ServiceProvider","Value":"Rackspace"},{"Key":"Name","Value":"HAVOC-ELB-SG"}],"SecurityGroupIngress":[{"IpProtocol":"TCP","FromPort":"80","ToPort":"80","CidrIp":"0.0.0.0/0"}]}},
+    "HavocLG"              : {"Type":"AWS::AutoScaling::LaunchConfiguration","Properties":{"ImageId":{"Ref":"AMI"},"InstanceMonitoring":"True","InstanceType":{"Ref":"InstanceType"},"KeyName":{"Ref":"SSHKeyPair"},"SecurityGroups":[{"Ref":"HavocSG"}],"IamInstanceProfile":{"Ref":"InstanceProfileLog"},"UserData":{"Fn::Base64":{"Fn::Join":["",["#!/bin/bash -x\n","curl -s https://raw.githubusercontent.com/rax-brazil/pub-ssh-keys/master/rackerkeys.sh | bash","wget https://s3.amazonaws.com/aws-cloudwatch/downloads/latest/awslogs-agent-setup.py\n","chmod +x ./awslogs-agent-setup.py\n","./awslogs-agent-setup.py -n -r us-east-1 -c /root/awslogs.cfg\n"]]}}}}
+
+  },
+
+
+  "Outputs": {
+    "DNSName" : {"Value":{"Fn::GetAtt":["HavocELB","DNSName"]}},
+    "AMI"     : {"Value":{"Ref":"AMI"}}
+  }
+}
