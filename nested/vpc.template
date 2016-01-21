@@ -1,55 +1,452 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
   "Description": "Generic VPC  // NO NAT ASG",
-
-  "Metadata": {"AWS::CloudFormation::Interface":{"ParameterGroups":[{"Label":{"default":"Environment VPC"},"Parameters":["ParameterEnvironment"]}],"ParameterLabels":{"ParameterEnvironment":{"default":"Environment VPC Name"}}}},
-
-  "Parameters": {
-
-    "ParameterEnvironment": {"AllowedPattern":"[a-zA-Z0-9]*","ConstraintDescription":"Must parse by `[a-zA-Z0-9]*`","Default":"Sandbox","Description":"Create a unique name to identify this environment by.","MaxLength":"16","MinLength":"3","Type":"String"}
-
-  },
-
-  "Conditions" : {},
-
-  "Mappings": {
-
-    "NetworkCIDRs": {
-      "VPC":  { "CIDR": "172.21.0.0/22" },
-      "EXT1": { "CIDR": "172.21.0.0/24" },
-      "EXT2": { "CIDR": "172.21.1.0/24" },
-      "INT1": { "CIDR": "172.21.2.0/24" },
-      "INT2": { "CIDR": "172.21.3.0/24" }
+  "Metadata": {
+    "AWS::CloudFormation::Interface": {
+      "ParameterGroups": [
+        {
+          "Label": {
+            "default": "Environment VPC"
+          },
+          "Parameters": [
+            "ParameterEnvironment"
+          ]
+        }
+      ],
+      "ParameterLabels": {
+        "ParameterEnvironment": {
+          "default": "Environment VPC Name"
+        }
+      }
     }
-
   },
-
+  "Parameters": {
+    "ParameterEnvironment": {
+      "AllowedPattern": "[a-zA-Z0-9]*",
+      "ConstraintDescription": "Must parse by `[a-zA-Z0-9]*`",
+      "Default": "Sandbox",
+      "Description": "Create a unique name to identify this environment by.",
+      "MaxLength": "16",
+      "MinLength": "3",
+      "Type": "String"
+    }
+  },
+  "Conditions": {},
+  "Mappings": {
+    "NetworkCIDRs": {
+      "VPC": {
+        "CIDR": "172.21.0.0/22"
+      },
+      "EXT1": {
+        "CIDR": "172.21.0.0/24"
+      },
+      "EXT2": {
+        "CIDR": "172.21.1.0/24"
+      },
+      "INT1": {
+        "CIDR": "172.21.2.0/24"
+      },
+      "INT2": {
+        "CIDR": "172.21.3.0/24"
+      }
+    }
+  },
   "Resources": {
-
-    "InternetGateway"                 : {"Type":"AWS::EC2::InternetGateway","Properties":{"Tags":[{"Key":"ServiceProvider","Value":"Rackspace"},{"Key":"VPC","Value":{ "Ref" : "ParameterEnvironment" }},{"Key":"Name","Value":"InternetGateway"}]}},
-    "Route"                           : {"Type":"AWS::EC2::Route","Properties":{"RouteTableId":{"Ref":"RouteTableEXT1"},"DestinationCidrBlock":"0.0.0.0/0","GatewayId":{"Ref":"InternetGateway"}}},
-    "RouteTableEXT1"                  : {"Type":"AWS::EC2::RouteTable","Properties":{"VpcId":{"Ref":"VPC"},"Tags":[{"Key":"ServiceProvider","Value":"Rackspace"},{"Key":"VPC","Value":{ "Ref" : "ParameterEnvironment" }},{"Key":"Name","Value":"RouteTableEXT1"}]}},
-    "RouteTableINT1"                  : {"Type":"AWS::EC2::RouteTable","Properties":{"VpcId":{"Ref":"VPC"},"Tags":[{"Key":"ServiceProvider","Value":"Rackspace"},{"Key":"VPC","Value":{ "Ref" : "ParameterEnvironment" }},{"Key":"Name","Value":"RouteTableINT1"}]}},
-    "RouteTableINT2"                  : {"Type":"AWS::EC2::RouteTable","Properties":{"VpcId":{"Ref":"VPC"},"Tags":[{"Key":"ServiceProvider","Value":"Rackspace"},{"Key":"VPC","Value":{ "Ref" : "ParameterEnvironment" }},{"Key":"Name","Value":"RouteTableINT2"}]}},
-    "SubnetEXT1"                      : {"Type":"AWS::EC2::Subnet","Properties":{"VpcId":{"Ref":"VPC"},"AvailabilityZone":{"Fn::Select":["1",{"Fn::GetAZs":{"Ref":"AWS::Region"}}]},"CidrBlock":{"Fn::FindInMap":["NetworkCIDRs","EXT1","CIDR"]},"MapPublicIpOnLaunch":"True" ,"Tags":[{"Key":"ServiceProvider","Value":"Rackspace"},{"Key":"VPC","Value":{ "Ref" : "ParameterEnvironment" }},{"Key":"Name","Value":"SubnetEXT1"}]}},
-    "SubnetEXT2"                      : {"Type":"AWS::EC2::Subnet","Properties":{"VpcId":{"Ref":"VPC"},"AvailabilityZone":{"Fn::Select":["2",{"Fn::GetAZs":{"Ref":"AWS::Region"}}]},"CidrBlock":{"Fn::FindInMap":["NetworkCIDRs","EXT2","CIDR"]},"MapPublicIpOnLaunch":"True" ,"Tags":[{"Key":"ServiceProvider","Value":"Rackspace"},{"Key":"VPC","Value":{ "Ref" : "ParameterEnvironment" }},{"Key":"Name","Value":"SubnetEXT2"}]}},
-    "SubnetINT1"                      : {"Type":"AWS::EC2::Subnet","Properties":{"VpcId":{"Ref":"VPC"},"AvailabilityZone":{"Fn::Select":["1",{"Fn::GetAZs":{"Ref":"AWS::Region"}}]},"CidrBlock":{"Fn::FindInMap":["NetworkCIDRs","INT1","CIDR"]},"MapPublicIpOnLaunch":"False","Tags":[{"Key":"ServiceProvider","Value":"Rackspace"},{"Key":"VPC","Value":{ "Ref" : "ParameterEnvironment" }},{"Key":"Name","Value":"SubnetINT1"}]}},
-    "SubnetINT2"                      : {"Type":"AWS::EC2::Subnet","Properties":{"VpcId":{"Ref":"VPC"},"AvailabilityZone":{"Fn::Select":["2",{"Fn::GetAZs":{"Ref":"AWS::Region"}}]},"CidrBlock":{"Fn::FindInMap":["NetworkCIDRs","INT2","CIDR"]},"MapPublicIpOnLaunch":"False","Tags":[{"Key":"ServiceProvider","Value":"Rackspace"},{"Key":"VPC","Value":{ "Ref" : "ParameterEnvironment" }},{"Key":"Name","Value":"SubnetINT2"}]}},
-    "SubnetRouteTableAssociationEXT1" : {"Type":"AWS::EC2::SubnetRouteTableAssociation","Properties":{"SubnetId":{"Ref":"SubnetEXT1"},"RouteTableId":{"Ref":"RouteTableEXT1"}}},
-    "SubnetRouteTableAssociationEXT2" : {"Type":"AWS::EC2::SubnetRouteTableAssociation","Properties":{"SubnetId":{"Ref":"SubnetEXT2"},"RouteTableId":{"Ref":"RouteTableEXT1"}}},
-    "SubnetRouteTableAssociationINT1" : {"Type":"AWS::EC2::SubnetRouteTableAssociation","Properties":{"SubnetId":{"Ref":"SubnetINT1"},"RouteTableId":{"Ref":"RouteTableINT1"}}},
-    "SubnetRouteTableAssociationINT2" : {"Type":"AWS::EC2::SubnetRouteTableAssociation","Properties":{"SubnetId":{"Ref":"SubnetINT2"},"RouteTableId":{"Ref":"RouteTableINT2"}}},
-    "VPC"                             : {"Type":"AWS::EC2::VPC","Properties":{"CidrBlock":{"Fn::FindInMap":["NetworkCIDRs","VPC","CIDR"]},"EnableDnsSupport":"True","EnableDnsHostnames":"True","InstanceTenancy":"default","Tags":[{"Key":"ServiceProvider","Value":"Rackspace"},{"Key":"VPC","Value":{ "Ref" : "ParameterEnvironment" }},{"Key":"Name","Value":{ "Ref" : "ParameterEnvironment" }}]}},
-    "VPCGatewayAttachment"            : {"Type":"AWS::EC2::VPCGatewayAttachment","Properties":{"InternetGatewayId":{"Ref":"InternetGateway"},"VpcId":{"Ref":"VPC"}}}
-
+    "InternetGateway": {
+      "Type": "AWS::EC2::InternetGateway",
+      "Properties": {
+        "Tags": [
+          {
+            "Key": "ServiceProvider",
+            "Value": "Rackspace"
+          },
+          {
+            "Key": "VPC",
+            "Value": {
+              "Ref": "ParameterEnvironment"
+            }
+          },
+          {
+            "Key": "Name",
+            "Value": "InternetGateway"
+          }
+        ]
+      }
+    },
+    "Route": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "RouteTableEXT1"
+        },
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "GatewayId": {
+          "Ref": "InternetGateway"
+        }
+      }
+    },
+    "RouteTableEXT1": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "VPC"
+        },
+        "Tags": [
+          {
+            "Key": "ServiceProvider",
+            "Value": "Rackspace"
+          },
+          {
+            "Key": "VPC",
+            "Value": {
+              "Ref": "ParameterEnvironment"
+            }
+          },
+          {
+            "Key": "Name",
+            "Value": "RouteTableEXT1"
+          }
+        ]
+      }
+    },
+    "RouteTableINT1": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "VPC"
+        },
+        "Tags": [
+          {
+            "Key": "ServiceProvider",
+            "Value": "Rackspace"
+          },
+          {
+            "Key": "VPC",
+            "Value": {
+              "Ref": "ParameterEnvironment"
+            }
+          },
+          {
+            "Key": "Name",
+            "Value": "RouteTableINT1"
+          }
+        ]
+      }
+    },
+    "RouteTableINT2": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "VPC"
+        },
+        "Tags": [
+          {
+            "Key": "ServiceProvider",
+            "Value": "Rackspace"
+          },
+          {
+            "Key": "VPC",
+            "Value": {
+              "Ref": "ParameterEnvironment"
+            }
+          },
+          {
+            "Key": "Name",
+            "Value": "RouteTableINT2"
+          }
+        ]
+      }
+    },
+    "SubnetEXT1": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": {
+          "Ref": "VPC"
+        },
+        "AvailabilityZone": {
+          "Fn::Select": [
+            "1",
+            {
+              "Fn::GetAZs": {
+                "Ref": "AWS::Region"
+              }
+            }
+          ]
+        },
+        "CidrBlock": {
+          "Fn::FindInMap": [
+            "NetworkCIDRs",
+            "EXT1",
+            "CIDR"
+          ]
+        },
+        "MapPublicIpOnLaunch": "True",
+        "Tags": [
+          {
+            "Key": "ServiceProvider",
+            "Value": "Rackspace"
+          },
+          {
+            "Key": "VPC",
+            "Value": {
+              "Ref": "ParameterEnvironment"
+            }
+          },
+          {
+            "Key": "Name",
+            "Value": "SubnetEXT1"
+          }
+        ]
+      }
+    },
+    "SubnetEXT2": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": {
+          "Ref": "VPC"
+        },
+        "AvailabilityZone": {
+          "Fn::Select": [
+            "2",
+            {
+              "Fn::GetAZs": {
+                "Ref": "AWS::Region"
+              }
+            }
+          ]
+        },
+        "CidrBlock": {
+          "Fn::FindInMap": [
+            "NetworkCIDRs",
+            "EXT2",
+            "CIDR"
+          ]
+        },
+        "MapPublicIpOnLaunch": "True",
+        "Tags": [
+          {
+            "Key": "ServiceProvider",
+            "Value": "Rackspace"
+          },
+          {
+            "Key": "VPC",
+            "Value": {
+              "Ref": "ParameterEnvironment"
+            }
+          },
+          {
+            "Key": "Name",
+            "Value": "SubnetEXT2"
+          }
+        ]
+      }
+    },
+    "SubnetINT1": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": {
+          "Ref": "VPC"
+        },
+        "AvailabilityZone": {
+          "Fn::Select": [
+            "1",
+            {
+              "Fn::GetAZs": {
+                "Ref": "AWS::Region"
+              }
+            }
+          ]
+        },
+        "CidrBlock": {
+          "Fn::FindInMap": [
+            "NetworkCIDRs",
+            "INT1",
+            "CIDR"
+          ]
+        },
+        "MapPublicIpOnLaunch": "False",
+        "Tags": [
+          {
+            "Key": "ServiceProvider",
+            "Value": "Rackspace"
+          },
+          {
+            "Key": "VPC",
+            "Value": {
+              "Ref": "ParameterEnvironment"
+            }
+          },
+          {
+            "Key": "Name",
+            "Value": "SubnetINT1"
+          }
+        ]
+      }
+    },
+    "SubnetINT2": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": {
+          "Ref": "VPC"
+        },
+        "AvailabilityZone": {
+          "Fn::Select": [
+            "2",
+            {
+              "Fn::GetAZs": {
+                "Ref": "AWS::Region"
+              }
+            }
+          ]
+        },
+        "CidrBlock": {
+          "Fn::FindInMap": [
+            "NetworkCIDRs",
+            "INT2",
+            "CIDR"
+          ]
+        },
+        "MapPublicIpOnLaunch": "False",
+        "Tags": [
+          {
+            "Key": "ServiceProvider",
+            "Value": "Rackspace"
+          },
+          {
+            "Key": "VPC",
+            "Value": {
+              "Ref": "ParameterEnvironment"
+            }
+          },
+          {
+            "Key": "Name",
+            "Value": "SubnetINT2"
+          }
+        ]
+      }
+    },
+    "SubnetRouteTableAssociationEXT1": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "SubnetEXT1"
+        },
+        "RouteTableId": {
+          "Ref": "RouteTableEXT1"
+        }
+      }
+    },
+    "SubnetRouteTableAssociationEXT2": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "SubnetEXT2"
+        },
+        "RouteTableId": {
+          "Ref": "RouteTableEXT1"
+        }
+      }
+    },
+    "SubnetRouteTableAssociationINT1": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "SubnetINT1"
+        },
+        "RouteTableId": {
+          "Ref": "RouteTableINT1"
+        }
+      }
+    },
+    "SubnetRouteTableAssociationINT2": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "SubnetINT2"
+        },
+        "RouteTableId": {
+          "Ref": "RouteTableINT2"
+        }
+      }
+    },
+    "VPC": {
+      "Type": "AWS::EC2::VPC",
+      "Properties": {
+        "CidrBlock": {
+          "Fn::FindInMap": [
+            "NetworkCIDRs",
+            "VPC",
+            "CIDR"
+          ]
+        },
+        "EnableDnsSupport": "True",
+        "EnableDnsHostnames": "True",
+        "InstanceTenancy": "default",
+        "Tags": [
+          {
+            "Key": "ServiceProvider",
+            "Value": "Rackspace"
+          },
+          {
+            "Key": "VPC",
+            "Value": {
+              "Ref": "ParameterEnvironment"
+            }
+          },
+          {
+            "Key": "Name",
+            "Value": {
+              "Ref": "ParameterEnvironment"
+            }
+          }
+        ]
+      }
+    },
+    "VPCGatewayAttachment": {
+      "Type": "AWS::EC2::VPCGatewayAttachment",
+      "Properties": {
+        "InternetGatewayId": {
+          "Ref": "InternetGateway"
+        },
+        "VpcId": {
+          "Ref": "VPC"
+        }
+      }
+    }
   },
-
   "Outputs": {
-    "VPCId":       { "Value": { "Ref": "VPC" }},
-    "VPCCIDR":     { "Value": { "Fn::GetAtt":["VPC","CidrBlock"]}},
-    "SubnetINT1":  { "Value": { "Ref": "SubnetINT1" }},
-    "SubnetINT2":  { "Value": { "Ref": "SubnetINT2" }},
-    "SubnetEXT1":  { "Value": { "Ref": "SubnetEXT1" }},
-    "SubnetEXT2":  { "Value": { "Ref": "SubnetEXT2" }}
+    "VPCId": {
+      "Value": {
+        "Ref": "VPC"
+      }
+    },
+    "VPCCIDR": {
+      "Value": {
+        "Fn::GetAtt": [
+          "VPC",
+          "CidrBlock"
+        ]
+      }
+    },
+    "SubnetINT1": {
+      "Value": {
+        "Ref": "SubnetINT1"
+      }
+    },
+    "SubnetINT2": {
+      "Value": {
+        "Ref": "SubnetINT2"
+      }
+    },
+    "SubnetEXT1": {
+      "Value": {
+        "Ref": "SubnetEXT1"
+      }
+    },
+    "SubnetEXT2": {
+      "Value": {
+        "Ref": "SubnetEXT2"
+      }
+    }
   }
 }

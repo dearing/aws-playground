@@ -1,9 +1,64 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
   "Description": "HAVOC // Nested Project",
-
   "Resources": {
-    "HavocVPC": {"Type":"AWS::CloudFormation::Stack","Properties":{"TemplateURL":"https://s3.amazonaws.com/ba9e9188-1cc8-4e5f-a2a0-b1755f1b6151/templates/vpc.template","Parameters":{"ParameterEnvironment":"Havoc"}}},
-    "HavocASG": {"Type":"AWS::CloudFormation::Stack","Properties":{"TemplateURL":"https://s3.amazonaws.com/ba9e9188-1cc8-4e5f-a2a0-b1755f1b6151/templates/asg.template","Parameters":{"AMI":"ami-60b6c60a","ASGMax":"1","ASGMin":"1","InstanceType":"t2.small","SSHKeyPair":"dearing","VPCId":{"Fn::GetAtt":["HavocVPC","Outputs.VPCId"]},"VPCCIDR":{"Fn::GetAtt":["HavocVPC","Outputs.VPCCIDR"]},"VPCSubnetINT1":{"Fn::GetAtt":["HavocVPC","Outputs.SubnetINT1"]},"VPCSubnetINT2":{"Fn::GetAtt":["HavocVPC","Outputs.SubnetINT2"]},"VPCSubnetEXT1":{"Fn::GetAtt":["HavocVPC","Outputs.SubnetEXT1"]},"VPCSubnetEXT2":{"Fn::GetAtt":["HavocVPC","Outputs.SubnetEXT2"]}}}}
+    "HavocVPC": {
+      "Type": "AWS::CloudFormation::Stack",
+      "Properties": {
+        "TemplateURL": "https://s3.amazonaws.com/ba9e9188-1cc8-4e5f-a2a0-b1755f1b6151/templates/vpc.template",
+        "Parameters": {
+          "ParameterEnvironment": "Havoc"
+        }
+      }
+    },
+    "HavocASG": {
+      "Type": "AWS::CloudFormation::Stack",
+      "Properties": {
+        "TemplateURL": "https://s3.amazonaws.com/ba9e9188-1cc8-4e5f-a2a0-b1755f1b6151/templates/asg.template",
+        "Parameters": {
+          "AMI": "ami-60b6c60a",
+          "ASGMax": "1",
+          "ASGMin": "1",
+          "InstanceType": "t2.small",
+          "SSHKeyPair": "dearing",
+          "VPCId": {
+            "Fn::GetAtt": [
+              "HavocVPC",
+              "Outputs.VPCId"
+            ]
+          },
+          "VPCCIDR": {
+            "Fn::GetAtt": [
+              "HavocVPC",
+              "Outputs.VPCCIDR"
+            ]
+          },
+          "VPCSubnetINT1": {
+            "Fn::GetAtt": [
+              "HavocVPC",
+              "Outputs.SubnetINT1"
+            ]
+          },
+          "VPCSubnetINT2": {
+            "Fn::GetAtt": [
+              "HavocVPC",
+              "Outputs.SubnetINT2"
+            ]
+          },
+          "VPCSubnetEXT1": {
+            "Fn::GetAtt": [
+              "HavocVPC",
+              "Outputs.SubnetEXT1"
+            ]
+          },
+          "VPCSubnetEXT2": {
+            "Fn::GetAtt": [
+              "HavocVPC",
+              "Outputs.SubnetEXT2"
+            ]
+          }
+        }
+      }
+    }
   }
 }
