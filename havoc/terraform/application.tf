@@ -1,4 +1,3 @@
-
 /*
   ======================================================
     'SECURITY GROUPS'
@@ -124,12 +123,12 @@ resource "aws_launch_configuration" "default" {
   enable_monitoring = true
 
   # this tells TERRAFORM to create a new launch_config before swapping it out at the ASG
-  # otherwise you get an error because you cannot delete what is in use.
+  # otherwise you get an error because you cannot delete while it is in use.
   lifecycle {
     create_before_destroy = true
   }
 
-  # using PACKER to prepare AMI's haven't needed userdata yet here for clarity.
+  # using PACKER to prepare AMI's haven't needed userdata yet; here for demonstration.
   user_data = "${file("userdata.sh")}"
 }
 

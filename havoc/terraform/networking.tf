@@ -1,4 +1,9 @@
-# VPC
+/*
+  ======================================================
+    'VIRTUAL PRIVATE CLOUD'
+  ======================================================
+*/
+
 resource "aws_vpc" "default" {
   cidr_block = "${lookup(var.vpc_cidrs, "VPC")}"
   tags {
@@ -75,13 +80,13 @@ resource "aws_internet_gateway" "default" {
     Name = "HAVOC-DEV-IG"
   }
 }
+
 # DEFAULT ROUTE for INTERNET GATEWAY EXT 01-02
 resource "aws_route" "default" {
   route_table_id         = "${aws_vpc.default.main_route_table_id}"
   destination_cidr_block = "0.0.0.0/0"
   gateway_id             = "${aws_internet_gateway.default.id}"
 }
-
 
 /*
   ======================================================
@@ -96,8 +101,8 @@ resource "aws_eip" "nat1" {
 }
 resource "aws_nat_gateway" "nat1" {
   allocation_id = "${aws_eip.nat1.id}"
-  subnet_id = "${aws_subnet.ext1.id}"
-  depends_on = ["aws_internet_gateway.default"]
+  subnet_id     = "${aws_subnet.ext1.id}"
+  depends_on    = ["aws_internet_gateway.default"]
 }
 # ROUTE all to NAT GATEWAY 01
 resource "aws_route_table" "nat1rt" {
@@ -112,8 +117,8 @@ resource "aws_route_table" "nat1rt" {
 }
 # ASSOCIATE our ROUTE TABLE to the INTERNAL SUBNET 01
 resource "aws_route_table_association" "nat1rta" {
-    subnet_id = "${aws_subnet.int1.id}"
-    route_table_id = "${aws_route_table.nat1rt.id}"
+  subnet_id = "${aws_subnet.int1.id}"
+  route_table_id = "${aws_route_table.nat1rt.id}"
 }
 
 
@@ -140,6 +145,6 @@ resource "aws_route_table" "nat2rt" {
 }
 # ASSOCIATE our ROUTE TABLE to the INTERNAL SUBNET 02
 resource "aws_route_table_association" "nat2rta" {
-    subnet_id = "${aws_subnet.int2.id}"
-    route_table_id = "${aws_route_table.nat2rt.id}"
+  subnet_id = "${aws_subnet.int2.id}"
+  route_table_id = "${aws_route_table.nat2rt.id}"
 }
