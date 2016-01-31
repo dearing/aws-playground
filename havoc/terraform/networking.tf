@@ -8,7 +8,7 @@ resource "aws_vpc" "default" {
 
 /*
   ======================================================
-    AVAILABILITY ZONE // PRIMARY
+    "AVAILABILITY ZONE // PRIMARY"
   ======================================================
 */
 
@@ -35,7 +35,7 @@ resource "aws_subnet" "int1" {
 
 /*
   ======================================================
-    AVAILABILITY ZONE // SECONDARY
+    "AVAILABILITY ZONE // SECONDARY"
   ======================================================
 */
 
@@ -63,7 +63,7 @@ resource "aws_subnet" "int2" {
 
 /*
   ======================================================
-    INTERNET Gateway and route
+    "INTERNET Gateway and route"
   ======================================================
 */
 
@@ -85,7 +85,7 @@ resource "aws_route" "default" {
 
 /*
   ======================================================
-    NAT Gatways and Routes
+    "NAT Gatways and Routes"
   ======================================================
 */
 
