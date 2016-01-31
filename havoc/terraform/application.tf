@@ -1,12 +1,9 @@
-# ==[ ELB ]==============================
-
 # A security group for the ELB so it is accessible via the web
 resource "aws_security_group" "elb" {
   name = "havoc-elb-sg"
   description = "HAVOC ELB SG"
   vpc_id      = "${aws_vpc.default.id}"
 
-  # HTTP access from anywhere
   ingress {
     from_port   = 443
     to_port     = 443
@@ -14,12 +11,11 @@ resource "aws_security_group" "elb" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # outbound internet access
   egress {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    cidr_blocks = ["${lookup(var.vpc_cidrs, "vpc")}"]
+    cidr_blocks = ["${lookup(var.vpc_cidrs, "VPC")}"]
   }
 
   tags {
@@ -27,22 +23,18 @@ resource "aws_security_group" "elb" {
   }
 }
 
-# Our default security group to access
-# the instances over SSH and HTTP
 resource "aws_security_group" "ec2" {
   name = "havoc-ec2-sg"
   description = "HAVOC EC2 SG"
   vpc_id      = "${aws_vpc.default.id}"
 
-  # SSH access from anywhere
   ingress {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["${lookup(var.vpc_cidrs, "vpc")}"]
+    cidr_blocks = ["${lookup(var.vpc_cidrs, "VPC")}"]
   }
 
-  # HTTP access from the VPC
   ingress {
     from_port   = 8080
     to_port     = 8080
@@ -50,7 +42,6 @@ resource "aws_security_group" "ec2" {
     cidr_blocks = ["${aws_security_group.elb.id}"]
   }
 
-  # outbound internet access
   egress {
     from_port   = 0
     to_port     = 0
@@ -129,7 +120,6 @@ resource "aws_autoscaling_group" "default" {
 }
 
 resource "aws_route53_record" "default" {
-  # zone_id = "${aws_route53_zone.default.zone_id}"
   zone_id = "Z2EBPSP8GXVCP4"
   name = "havoc.racker.tech"
   type = "A"
