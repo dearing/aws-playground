@@ -143,10 +143,73 @@ resource "aws_security_group" "ec2" {
   }
 }
 
+resource "aws_autoscaling_policy" "step-up" {
+  adjustment_type        = "PercentChangeInCapacity"
+  autoscaling_group_name = "${aws_autoscaling_group.default.name}"
+  cooldown               = 60
+  min_adjustment_step    = 1
+  name                   = "step up"
+  scaling_adjustment     = 33
+}
+
+resource "aws_autoscaling_policy" "step-down" {
+  adjustment_type        = "PercentChangeInCapacity"
+  autoscaling_group_name = "${aws_autoscaling_group.default.name}"
+  cooldown               = 60
+  min_adjustment_step    = 1
+  name                   = "step down"
+  scaling_adjustment     = 33
+}
+
+
+resource "aws_cloudwatch_metric_alarm" "hot" {
+    alarm_name = "heating-up"
+    comparison_operator = "GreaterThanOrEqualToThreshold"
+    evaluation_periods = "2"
+    metric_name = "CPUUtilization"
+    namespace = "AWS/EC2"
+    period = "60"
+    statistic = "Average"
+    threshold = "75"
+    dimensions {
+        AutoScalingGroupName = "${aws_autoscaling_group.default.name}"
+    }
+    alarm_description = "when the average cpu usage rises, scale up"
+    alarm_actions = ["${aws_autoscaling_policy.step-up.arn}"]
+}
+
+resource "aws_cloudwatch_metric_alarm" "cool" {
+    alarm_name = "coolingoff"
+    comparison_operator = "LessThanOrEqualToThreshold"
+    evaluation_periods = "2"
+    metric_name = "CPUUtilization"
+    namespace = "AWS/EC2"
+    period = "60"
+    statistic = "Average"
+    threshold = "25"
+    dimensions {
+        AutoScalingGroupName = "${aws_autoscaling_group.default.name}"
+    }
+    alarm_description = "when the average cpu usage drops, scale down"
+    alarm_actions = ["${aws_autoscaling_policy.step-down.arn}"]
+}
+
+resource "aws_autoscaling_schedule" "default" {
+    scheduled_action_name = "fresh and clean"
+    min_size = 2
+    max_size = 6
+    desired_capacity = 2
+    recurrence = "0 * * * *" # hourly
+    autoscaling_group_name = "${aws_autoscaling_group.default.name}"
+}
 
 resource "aws_elb" "default" {
   subnets         = ["${aws_subnet.ext1.id}", "${aws_subnet.ext2.id}"]
   security_groups = ["${aws_security_group.elb.id}"]
+  cross_zone_load_balancing = true
+  idle_timeout        = 60
+  connection_draining = true
+  connection_draining_timeout = 60
 
   listener {
     instance_port     = 8080
@@ -155,6 +218,15 @@ resource "aws_elb" "default" {
     lb_protocol       = "https"  # *.racker.tech
     ssl_certificate_id = "arn:aws:acm:us-east-1:595430538023:certificate/5d611a4a-6348-4134-9ccd-4b92e25469ac"
   }
+
+  health_check {
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+    timeout = 10
+    target = "HTTP:8080/"
+    interval = 30
+  }
+
   tags {
     Name = "HAVOC-ELB"
   }
@@ -168,21 +240,24 @@ resource "aws_key_pair" "default" {
 
 resource "aws_launch_configuration" "default" {
   image_id = "${lookup(var.aws_amis, var.aws_region)}"
-  instance_type = "t2.medium"
+  instance_type = "t2.small"
   security_groups = ["${aws_security_group.ec2.id}"]
   # user_data = "${file("userdata.sh")}"
   key_name = "${var.key_name}"
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 
 resource "aws_autoscaling_group" "default" {
   # availability_zones = ["${aws_subnet.int1.availability_zone}","${aws_subnet.int2.availability_zone}"]
   vpc_zone_identifier = ["${aws_subnet.int1.id}","${aws_subnet.int2.id}"]
-  max_size = 4
+  max_size = 6
   min_size = 2
   health_check_grace_period = 300
   health_check_type = "ELB"
-  desired_capacity = 2
   load_balancers = ["${aws_elb.default.name}"]
   launch_configuration = "${aws_launch_configuration.default.name}"
 
