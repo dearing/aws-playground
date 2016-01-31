@@ -1,0 +1,42 @@
+{
+  "variables": {
+    "aws_secret_access_key": "",
+    "aws_access_key_id": ""
+  },
+  "builders": [
+    {
+      "type": "null",
+      "communicator": "ssh",
+      "ssh_host": "54.164.104.122",
+      "ssh_username": "rack",
+      "ssh_private_key_file": "/home/dearing/.ssh/id_rsa"
+    },
+    {
+      "type": "amazon-ebs",
+      "access_key": "{{user `aws_secret_access_key` }}",
+      "secret_key": "{{user `aws_access_key_id` }}",
+      "region": "us-east-1",
+      "source_ami": "ami-60b6c60a",
+      "instance_type": "t2.micro",
+      "ssh_username": "ec2-user",
+      "ami_name": "havoc {{timestamp}}",
+      "communicator": "ssh",
+      "ssh_pty": true
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "shell",
+      "scripts": [
+        "provisioners/remote-shell/common.sh"
+      ],
+      "execute_command": "{{ .Vars }} sudo -E -S sh '{{ .Path }}'"
+    },
+    {
+      "type": "salt-masterless",
+      "skip_bootstrap": true,
+      "local_state_tree": "./provisioners/salt-masterless/salt/",
+      "minion_config": "./provisioners/salt-masterless/minion"
+    }
+  ]
+}
