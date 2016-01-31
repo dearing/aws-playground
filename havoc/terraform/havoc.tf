@@ -10,6 +10,7 @@ resource "aws_vpc" "default" {
 resource "aws_subnet" "ext1" {
   vpc_id                  = "${aws_vpc.default.id}"
   cidr_block              = "${lookup(var.vpc_cidrs, "ext-1")}"
+  availability_zone       = "${lookup(var.zones, "primary")}"
   map_public_ip_on_launch = true
   tags {
     Name = "EXT1"
@@ -27,6 +28,7 @@ resource "aws_subnet" "int1" {
 resource "aws_subnet" "ext2" {
   vpc_id                  = "${aws_vpc.default.id}"
   cidr_block              = "${lookup(var.vpc_cidrs, "ext-2")}"
+  availability_zone       = "${lookup(var.zones, "secondary")}"  
   map_public_ip_on_launch = true
   tags {
     Name = "EXT2"
@@ -59,15 +61,17 @@ resource "aws_route" "default" {
 resource "aws_eip" "nat1" {
     vpc = true
 }
+
+resource "aws_eip" "nat2" {
+    vpc = true
+}
+
 resource "aws_nat_gateway" "nat1" {
   allocation_id = "${aws_eip.nat1.id}"
   subnet_id = "${aws_subnet.ext1.id}"
   depends_on = ["aws_internet_gateway.default"]
 }
 
-resource "aws_eip" "nat2" {
-    vpc = true
-}
 resource "aws_nat_gateway" "nat2" {
   allocation_id = "${aws_eip.nat2.id}"
   subnet_id = "${aws_subnet.ext2.id}"
@@ -78,6 +82,7 @@ resource "aws_nat_gateway" "nat2" {
 
 # A security group for the ELB so it is accessible via the web
 resource "aws_security_group" "elb" {
+  name = "havoc-elb-sg"
   description = "HAVOC ELB SG"
   vpc_id      = "${aws_vpc.default.id}"
 
@@ -85,7 +90,7 @@ resource "aws_security_group" "elb" {
   ingress {
     from_port   = 443
     to_port     = 443
-    protocol    = "https"
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
@@ -105,7 +110,8 @@ resource "aws_security_group" "elb" {
 # Our default security group to access
 # the instances over SSH and HTTP
 resource "aws_security_group" "ec2" {
-  description = "havoc web servers"
+  name = "havoc-ec2-sg"
+  description = "HAVOC EC2 SG"
   vpc_id      = "${aws_vpc.default.id}"
 
   # SSH access from anywhere
@@ -121,7 +127,7 @@ resource "aws_security_group" "ec2" {
     from_port   = 8080
     to_port     = 8080
     protocol    = "tcp"
-    security_groups = ["${aws_security_group.elb.id}"]
+    cidr_blocks = ["${aws_security_group.elb.id}"]
   }
 
   # outbound internet access
@@ -170,7 +176,8 @@ resource "aws_launch_configuration" "default" {
 
 
 resource "aws_autoscaling_group" "default" {
-  availability_zones = ["${aws_subnet.int1.availability_zone}","${aws_subnet.int1.availability_zone}"]
+  # availability_zones = ["${aws_subnet.int1.availability_zone}","${aws_subnet.int2.availability_zone}"]
+  vpc_zone_identifier = ["${aws_subnet.int1.id}","${aws_subnet.int2.id}"]
   max_size = 4
   min_size = 2
   health_check_grace_period = 300
@@ -186,12 +193,9 @@ resource "aws_autoscaling_group" "default" {
   }
 }
 
-resource "aws_route53_zone" "default" {
-   name = "havoc.racker.tech"
-}
-
 resource "aws_route53_record" "default" {
-  zone_id = "${aws_route53_zone.default.zone_id}"
+  # zone_id = "${aws_route53_zone.default.zone_id}"
+  zone_id = "Z2EBPSP8GXVCP4"
   name = "havoc.racker.tech"
   type = "A"
 
