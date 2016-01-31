@@ -3,3 +3,4 @@ build:
   commands:
     - go get github.com/hashicorp/terraform
     - go install github.com/hashicorp/terraform
+    - terraform graph ./havoc/terraform/
