@@ -179,7 +179,7 @@ resource "aws_cloudwatch_metric_alarm" "hot" {
 }
 
 resource "aws_cloudwatch_metric_alarm" "cool" {
-    alarm_name = "coolingoff"
+    alarm_name = "cooling-off"
     comparison_operator = "LessThanOrEqualToThreshold"
     evaluation_periods = "2"
     metric_name = "CPUUtilization"
@@ -244,7 +244,7 @@ resource "aws_launch_configuration" "default" {
   security_groups = ["${aws_security_group.ec2.id}"]
   # user_data = "${file("userdata.sh")}"
   key_name = "${var.key_name}"
-
+  enable_monitoring = true
   lifecycle {
     create_before_destroy = true
   }
