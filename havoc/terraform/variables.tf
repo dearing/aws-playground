@@ -2,7 +2,7 @@
   ======================================================
     'PROVIDER CONFIG'
 
-    'These settings will can be defaulted from your'
+    'These settings can be defaulted from your'
     '~/.aws/config and ~/.aws/credentials'.
 
   ======================================================
