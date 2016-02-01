@@ -6,7 +6,7 @@ cd-preq:
 
 cd-install:
   cmd.script:
-    - source: salt://codedeploy-preqs/install.rb
+    - source: salt://codedeploy/install.rb
     - user: root
     - group: root
     - shell: /bin/bash
