@@ -4,7 +4,10 @@ experiments with deployment (AWS) *evolving doc*
 
 on [terraform]
 -----
-Terraform promises better interop with teams than cloud formation.  Let's dive in.
+Terraform promises better interop with teams than cloud formation.  Let's dive in with a graph of the deployment thus far:
+```
+# terraform graph | dot -Tpng > graph.png
+```
 
 ![current graph!](terraform/graph.png?raw=true)
 
