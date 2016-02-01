@@ -48,7 +48,7 @@ resource "aws_route_table_association" "nat1rta" {
 }
 
 ```
-The generate state file for that bit of code is just JSON and looks something like this from a real deployment:
+The generated state file for that bit of code is just JSON and looks something like this from a real deployment:
 
 ```json
 "aws_route_table.nat2rt": {
