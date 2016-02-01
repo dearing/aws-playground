@@ -1,0 +1,66 @@
+{
+  "_comment": "base64 encoded bastion vars for your convenience :D",  
+  "_comment": "ICAgICAgInNzaF9iYXN0aW9uX2hvc3QiICAgICAgICAgICAgOiAie3t1c2VyIGBiYXN0aW9uX2hvc3RgfX0iLAogICAgICAic3NoX2Jhc3Rpb25fdXNlcm5hbWUiICAgICAgICA6ICJ7e3VzZXIgYGJhc3Rpb25fdXNlcmB9fSIsCiAgICAgICJzc2hfYmFzdGlvbl9wcml2YXRlX2tleV9maWxlIjogInt7dXNlciBgYmFzdGlvbl9rZXlgIH19Iiw=",
+
+  "_comment": "vars defined from env or a file, I prefer to use something like `packer build -var-file=.secrets.json havoc-salt.json`",
+
+  "variables": {
+    "aws_access_key_id"     : "",
+    "aws_secret_access_key" : "",
+    "ssh_private_key_file"  : "",
+    "ssh_username"          : "",
+    "bastion_host"          : "",
+    "bastion_user"          : "",
+    "bastion_key"           : ""
+  },
+
+  
+  "_comment": "use with `packer build -only=null havoc-salt.json` for dry runs against existing servers",
+
+  "builders": [
+    {
+      "type"                        : "null",
+
+      "communicator"                : "ssh",
+      "ssh_host"                    : "{{user `ssh_host` }}",
+      "ssh_private_key_file"        : "{{user `ssh_key`  }}",
+      "ssh_username"                : "{{user `ssh_user` }}"
+    },
+    {
+      "type"          : "amazon-ebs",
+
+      "access_key"    : "{{user `aws_secret_access_key` }}",
+      "ami_name"      : "havoc-{{timestamp}}",
+      "communicator"  : "ssh",
+      "instance_type" : "t2.medium",
+      "region"        : "us-east-1",
+      "secret_key"    : "{{user `aws_access_key_id` }}",
+      "source_ami"    : "ami-60b6c60a",
+      "ssh_pty"       : true,
+      "ssh_username"  : "ec2-user"
+    }
+  ],
+
+  "_comment": "salt-bootstrap stable is broken on recent amazon-linux; so we install it with a script and skip the boostrap step",
+
+  "provisioners": [
+    {
+      "type": "shell",
+
+      "execute_command": "{{ .Vars }} sudo -E -S sh '{{ .Path }}'",
+      "pause_before": "10s",
+
+      "scripts": [
+        "provisioners/remote-shell/common.sh",
+        "provisioners/remote-shell/saltstack.sh"
+      ]
+    },
+    {
+      "type"              : "salt-masterless",
+      "skip_bootstrap"    : true,
+      "local_state_tree"  : "./provisioners/salt-masterless/salt/",
+      "minion_config"     : "./provisioners/salt-masterless/minion"
+      
+    }
+  ]
+}
