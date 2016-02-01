@@ -63,6 +63,6 @@ variable "public_key_path" {
 }
 
 variable "key_name" {
-  default     = "dearing"
+  default     = "havoc"
   description = "SSH KEYPAIR NAME"
 }
