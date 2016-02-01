@@ -94,16 +94,19 @@ resource "aws_route" "default" {
   ======================================================
 */
 
+// NAT 1
 
 # EIP and NAT GATEWAY for SUBNET EXT/INT 01
 resource "aws_eip" "nat1" {
   vpc = true
 }
+
 resource "aws_nat_gateway" "nat1" {
   allocation_id = "${aws_eip.nat1.id}"
   subnet_id     = "${aws_subnet.ext1.id}"
   depends_on    = ["aws_internet_gateway.default"]
 }
+
 # ROUTE all to NAT GATEWAY 01
 resource "aws_route_table" "nat1rt" {
   vpc_id = "${aws_vpc.default.id}"
@@ -121,17 +124,19 @@ resource "aws_route_table_association" "nat1rta" {
   route_table_id = "${aws_route_table.nat1rt.id}"
 }
 
-
+// 'NAT 2'
 
 # EIP and NAT GATEWAY for SUBNET EXT/INT 02
 resource "aws_eip" "nat2" {
   vpc = true
 }
+
 resource "aws_nat_gateway" "nat2" {
   allocation_id = "${aws_eip.nat2.id}"
   subnet_id = "${aws_subnet.ext2.id}"
   depends_on = ["aws_internet_gateway.default"]
 }
+
 # ROUTE all to NAT GATEWAY 02
 resource "aws_route_table" "nat2rt" {
   vpc_id = "${aws_vpc.default.id}"
@@ -143,6 +148,7 @@ resource "aws_route_table" "nat2rt" {
     Name = "${upper(format("%s-NAT2-RT", var.environment))}"
   }
 }
+
 # ASSOCIATE our ROUTE TABLE to the INTERNAL SUBNET 02
 resource "aws_route_table_association" "nat2rta" {
   subnet_id = "${aws_subnet.int2.id}"

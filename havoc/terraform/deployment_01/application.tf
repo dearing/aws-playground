@@ -22,7 +22,7 @@ resource "aws_security_group" "elb" {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    cidr_blocks = ["${lookup(var.vpc_cidrs, "VPC")}"]
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   tags {
@@ -32,9 +32,11 @@ resource "aws_security_group" "elb" {
 
 # security for the autoscaled instances
 resource "aws_security_group" "ec2" {
-  name = "havoc-ec2-sg"
-  description = "HAVOC EC2 SG"
-  vpc_id      = "${aws_vpc.default.id}"
+  depends_on    = ["aws_security_group.elb"]
+
+  name          = "havoc-ec2-sg"
+  description   = "HAVOC EC2 SG"
+  vpc_id        = "${aws_vpc.default.id}"
 
   # anyone within the VPC can ssh in
   ingress {
@@ -46,10 +48,10 @@ resource "aws_security_group" "ec2" {
 
   # only the load-balancer needs to read port 8080 (our web app)
   ingress {
-    from_port   = 8080
-    to_port     = 8080
-    protocol    = "tcp"
-    cidr_blocks = ["${aws_security_group.elb.id}"]
+    from_port       = 8080
+    to_port         = 8080
+    protocol        = "tcp"
+    security_groups = ["${aws_security_group.elb.id}"]
   }
 
   egress {
@@ -71,6 +73,8 @@ resource "aws_security_group" "ec2" {
 */
 
 resource "aws_elb" "default" {
+  depends_on      = ["aws_subnet.ext1", "aws_subnet.ext2"]
+
   subnets         = ["${aws_subnet.ext1.id}", "${aws_subnet.ext2.id}"]
   security_groups = ["${aws_security_group.elb.id}"]
   cross_zone_load_balancing = true
@@ -116,25 +120,29 @@ resource "aws_key_pair" "default" {
 
 
 resource "aws_launch_configuration" "default" {
+  # this tells TERRAFORM to create a new launch_config before swapping it out at the ASG
+  # otherwise you get an error because you cannot delete while it is in use.
+  lifecycle { create_before_destroy = true }
+
   image_id = "${lookup(var.aws_amis, var.aws_region)}"
+  # instance_type = "${var.instance_size}"
   instance_type = "t2.small"
   security_groups = ["${aws_security_group.ec2.id}"]
   key_name = "${var.key_name}"
   enable_monitoring = true
 
-  # this tells TERRAFORM to create a new launch_config before swapping it out at the ASG
-  # otherwise you get an error because you cannot delete while it is in use.
-  lifecycle {
-    create_before_destroy = true
-  }
-
   # using PACKER to prepare AMI's haven't needed userdata yet; here for demonstration.
   user_data = "${file("userdata.sh")}"
 }
 
-
 # launch instances in both subnets provided and place them into the load balancer
 resource "aws_autoscaling_group" "default" {
+
+  # neat trick from hashicorp mailing list; 
+  # set name by lg name to taint asg; if asg fails then the deployment stops // blue-green
+  name = "${upper(format("%s-%s", var.environment, aws_launch_configuration.default.name))}"
+  lifecycle { create_before_destroy = true }
+
   vpc_zone_identifier = ["${aws_subnet.int1.id}","${aws_subnet.int2.id}"]
   max_size = 6
   min_size = 2
@@ -158,6 +166,7 @@ resource "aws_autoscaling_group" "default" {
 
 # create an alias record on the extant zone for this ELB
 resource "aws_route53_record" "default" {
+  depends_on = ["aws_elb.default"]
   zone_id = "Z2EBPSP8GXVCP4"
   name = "havoc.racker.tech"
   type = "A"

@@ -33,7 +33,6 @@ variable "zones" {
   default = {
     "primary"   = "us-east-1b"
     "secondary" = "us-east-1c"
-#    "tertiary"  = "us-east-1d"
   }
 }
 
@@ -54,6 +53,11 @@ variable "aws_amis" {
   }
 }
 
+variable "instance_size" {
+  default = {
+    instance_size = "t2.small"
+  }
+}
 
 /*
   ======================================================
