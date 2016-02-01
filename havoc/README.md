@@ -48,6 +48,9 @@ resource "aws_route_table_association" "nat1rta" {
 }
 
 ```
+*note that we get github syntax highlighting for `.tf`*:thumbsup:
+
+
 The generated state file for that bit of code is just JSON and looks something like this from a real deployment:
 
 ```json
