@@ -5,7 +5,7 @@
 */
 
 resource "aws_vpc" "default" {
-  cidr_block = "${lookup(var.vpc_cidrs, "VPC")}"
+  cidr_block = "${var.vpc_cidr}"
   tags {
     Name = "${upper(format("%s-VPC", var.environment))}"
   }
@@ -20,21 +20,21 @@ resource "aws_vpc" "default" {
 # SUBNET EXTERNAL 01
 resource "aws_subnet" "ext1" {
   vpc_id                  = "${aws_vpc.default.id}"
-  cidr_block              = "${lookup(var.vpc_cidrs, "EXT1")}"
-  availability_zone       = "${lookup(var.zones, "primary")}"
+  cidr_block              = "${var.ext1_cidr}"
+  availability_zone       = "${var.primary_az)}"
   map_public_ip_on_launch = true
   tags {
-    Name = "${upper(format("%s-EXT1", var.environment))}"
+    Name = "EXT1"
   }
 }
 # SUBNET INTERNAL 01
 resource "aws_subnet" "int1" {
   vpc_id                  = "${aws_vpc.default.id}"
-  cidr_block              = "${lookup(var.vpc_cidrs, "INT1")}"
-  availability_zone       = "${aws_subnet.ext1.availability_zone}"
+  cidr_block              = "${var.int1_cidr}"
+  availability_zone       = "${var.primary_az)}"
   map_public_ip_on_launch = false
   tags {
-    Name = "${upper(format("%s-INT1", var.environment))}"
+    Name = "INT1"
   }
 }
 
@@ -48,21 +48,21 @@ resource "aws_subnet" "int1" {
 # SUBNET EXTERNAL 02
 resource "aws_subnet" "ext2" {
   vpc_id                  = "${aws_vpc.default.id}"
-  cidr_block              = "${lookup(var.vpc_cidrs, "EXT2")}"
-  availability_zone       = "${lookup(var.zones, "secondary")}"  
+  cidr_block              = "${var.ext2_cidr}"
+  availability_zone       = "${var.secondary_az)}"
   map_public_ip_on_launch = true
   tags {
-    Name = "${upper(format("%s-EXT2", var.environment))}"
+    Name = "EXT2"
   }
 }
 # SUBNET INTERNAL 02
 resource "aws_subnet" "int2" {
   vpc_id                  = "${aws_vpc.default.id}"
-  cidr_block              = "${lookup(var.vpc_cidrs, "INT2")}"
-  availability_zone       = "${aws_subnet.ext2.availability_zone}"
+  cidr_block              = "${var.int2_cidr}"
+  availability_zone       = "${var.secondary_az)}"
   map_public_ip_on_launch = false
   tags {
-    Name = "${upper(format("%s-INT2", var.environment))}"
+    Name = "INT2"
   }
 }
 
@@ -77,7 +77,7 @@ resource "aws_subnet" "int2" {
 resource "aws_internet_gateway" "default" {
   vpc_id = "${aws_vpc.default.id}"
   tags {
-    Name = "${upper(format("%s-IG", var.environment))}"
+    Name = "HAVOC-DEV-IG"
   }
 }
 
@@ -112,7 +112,7 @@ resource "aws_route_table" "nat1rt" {
     nat_gateway_id = "${aws_nat_gateway.nat1.id}"
   }
   tags {
-    Name = "${upper(format("%s-NAT1-RT", var.environment))}"
+    Name = "NAT1-ROUTING"
   }
 }
 # ASSOCIATE our ROUTE TABLE to the INTERNAL SUBNET 01
@@ -140,7 +140,7 @@ resource "aws_route_table" "nat2rt" {
     nat_gateway_id = "${aws_nat_gateway.nat2.id}"
   }
   tags {
-    Name = "${upper(format("%s-NAT2-RT", var.environment))}"
+    Name = "NAT2-ROUTING"
   }
 }
 # ASSOCIATE our ROUTE TABLE to the INTERNAL SUBNET 02

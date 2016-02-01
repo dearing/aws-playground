@@ -18,6 +18,11 @@ provider "aws" {
   ======================================================
 */
 
+variable "environment" {
+  description = "Name your work!"
+  default     = "HAVOC-DEV"
+}
+
 variable "aws_region" {
   description = "AWS REGION"
   default     = "us-east-1"

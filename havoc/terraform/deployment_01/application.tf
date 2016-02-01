@@ -26,7 +26,7 @@ resource "aws_security_group" "elb" {
   }
 
   tags {
-    Name = "HAVOC-SG-ELB"
+    Name = "${upper(format("%s-ELB-SG", var.environment))}"
   }
 }
 
@@ -60,7 +60,7 @@ resource "aws_security_group" "ec2" {
   }
 
   tags {
-    Name = "HAVOC-SG-EC2"
+    Name = "${upper(format("%s-EC2-SG", var.environment))}"
   }
 }
 
@@ -98,7 +98,7 @@ resource "aws_elb" "default" {
   }
 
   tags {
-    Name = "HAVOC-ELB"
+    Name = "${upper(format("%s-ELB", var.environment))}"
   }
 }
 
@@ -145,7 +145,7 @@ resource "aws_autoscaling_group" "default" {
 
   tag {
     key = "Name"
-    value = "HAVOC-DEV"
+    value = "${upper(format("%s-ASG", var.environment))}"
     propagate_at_launch = true
   }
 }
