@@ -1,6 +1,6 @@
 [havoc] experiments
 ===
-experiments with deployment (AWS)
+experiments with deployment (AWS) *evolving doc*
 
 on [terraform]
 -----
