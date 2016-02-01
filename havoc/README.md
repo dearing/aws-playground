@@ -11,7 +11,9 @@ Terraform promises better interop with teams than cloud formation.  Let's dive i
 
 ![current graph!](terraform/graph.png?raw=true)
 
-Terraform is a nice tool from [hasicorp] for describing a provider as state.  You can plan and apply by a state while sharing it with other members of your team.  The configuration for resources are in hashicorp's configuration language, [hcl], and compared to writing cloudformation templates, much easier. Think human-usable JSON with string interpolation and comments.  If your a fan of sublimetext3, there is a [terraform plugin].  As a taste, here is setting up a nat gateway with route tables and association.
+Terraform is a nice tool from [hashicorp] for describing a provider as state.  You can plan and apply by a state as an artifact allowing it to be shared with other members of your team.  The configuration for resources are in Hashicorp's Configuration Language, [HCL] and compared to writing cloudformation templates, much easier. Think human-usable JSON with string interpolation and comments.  And if you're a fan of sublimetext3, there is a [terraform plugin].  
+
+As a taste, here is setting up a nat gateway with route tables and association.
 
 ```tf
 /*
@@ -50,8 +52,7 @@ resource "aws_route_table_association" "nat1rta" {
 ```
 *note that we get github syntax highlighting for `.tf`*:thumbsup:
 
-
-The generated state file for that bit of code is just JSON and looks something like this from a real deployment:
+The generated state for that bit of code is just JSON and looks like this ( snipped from a real deployment ):
 
 ```json
 "aws_route_table.nat2rt": {
@@ -110,9 +111,11 @@ The generated state file for that bit of code is just JSON and looks something l
 }
 ```
 
-One of the nicest things about using it is that all of the `.tf` configs are mashed together, not nested, making working with them a breeze and `organize-by-file` a thing.  Terraform further allows for modules, which are re-usable components that are organized with simple directories and mapped with a config.
+One of the nicest things about using TerraForm is that all of the `.tf` configs are mashed together in the directory, making working with them a breeze and `organize-by-file` a thing.  Terraform further allows for modules, which are re-usable components that are sub-organized with directories and tied together with a config but we'll dive into that later.
 
-Let's see what `terraform plan` out put looks like while also introducing some of the flexibility of the HCL here.  We will add a new var `environment` and then use the string formatter (golang templating for the win!) to create dynamic tags.  Here is our diff:
+Let's see a scenario involving and update to our tags and calling `terraform plan` followed by `terraform apply` to see it all fit together while also introducing some of the flexibility of the HCL here.  We will add the new variable `environment` and then use the string formatter (Go templating for the win!) to create dynamic tags.  
+
+Here is our diff:
 
 ```diff
 diff --git a/havoc/terraform/deployment_01/application.tf b/havoc/terraform/deployment_01/application.tf
@@ -250,10 +253,10 @@ index 200f959..d0467a8 100644
 
 ```
 
-Finally, we run `terraform plan` and see what changes the tool would do with our new work.
+Now, we run `terraform plan` and see what changes the tool would do with our new work this doubles a sanity check on the syntax of your documents.
 
 ```
-# terraform plan
+$ terraform plan
 ~ aws_autoscaling_group.default
     tag.1637732627.key:                 "" => "Name"
     tag.1637732627.propagate_at_launch: "" => "1"
@@ -293,10 +296,10 @@ Finally, we run `terraform plan` and see what changes the tool would do with our
     tags.Name: "HAVOC-DEV" => "HAVOC-DEV-VPC"
 ```
 
-Looking good.  This effectively demonstrates a tight `check your work as you go` model that I enjoy.  Something I miss from working with CFORM.   Lets push this up:
+Okay, looking good.  This effectively demonstrates a tight `check-your-work` often model that I enjoy, something I miss from working with CForm.   Lets apply this plan to our environment:
 
 ```
-# terraform apply
+$ terraform apply
 aws_eip.nat2: Refreshing state... (ID: eipalloc-eae69d8e)
 aws_vpc.default: Refreshing state... (ID: vpc-c286c5a6)
 aws_key_pair.default: Refreshing state... (ID: havoc)
@@ -376,7 +379,7 @@ Voila!
 
 
 [havoc]: https://github.com/dearing/havoc_server
-[hasicorp]: https://www.hashicorp.com/
+[hashicorp]: https://www.hashicorp.com/
 [hcl]: https://github.com/hashicorp/hcl
 [terraform]: https://www.terraform.io/
 [terraform plugin]: https://packagecontrol.io/packages/Terraform
