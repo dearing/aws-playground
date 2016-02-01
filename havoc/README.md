@@ -112,7 +112,192 @@ The generated state file for that bit of code is just JSON and looks something l
 
 One of the nicest things about using it is that all of the `.tf` configs are mashed together, not nested, making working with them a breeze and `organize-by-file` a thing.  Terraform further allows for modules, which are re-usable components that are organized with simple directories and mapped with a config.
 
+Let's see what `terraform plan` out put looks like while also introducing some of the flexibility of the HCL here.  We will add a new var `environment` and then use the string formatter (golang templating for the win!) to create dynamic tags.  Here is our diff:
+
+```diff
+diff --git a/havoc/terraform/deployment_01/application.tf b/havoc/terraform/deployment_01/application.tf
+index d5a5e8b..509fc32 100644
+--- a/havoc/terraform/deployment_01/application.tf
++++ b/havoc/terraform/deployment_01/application.tf
+@@ -26,7 +26,7 @@ resource "aws_security_group" "elb" {
+   }
+ 
+   tags {
+-    Name = "HAVOC-SG-ELB"
++    Name = "${upper(format("%s-ELB-SG", var.environment))}"
+   }
+ }
+ 
+@@ -60,7 +60,7 @@ resource "aws_security_group" "ec2" {
+   }
+ 
+   tags {
+-    Name = "HAVOC-SG-EC2"
++    Name = "${upper(format("%s-EC2-SG", var.environment))}"
+   }
+ }
+ 
+@@ -98,7 +98,7 @@ resource "aws_elb" "default" {
+   }
+ 
+   tags {
+-    Name = "HAVOC-ELB"
++    Name = "${upper(format("%s-ELB", var.environment))}"
+   }
+ }
+ 
+@@ -145,7 +145,7 @@ resource "aws_autoscaling_group" "default" {
+ 
+   tag {
+     key = "Name"
+-    value = "HAVOC-DEV"
++    value = "${upper(format("%s-ASG", var.environment))}"
+     propagate_at_launch = true
+   }
+ }
+diff --git a/havoc/terraform/deployment_01/networking.tf b/havoc/terraform/deployment_01/networking.tf
+index 3491541..b3104dc 100644
+--- a/havoc/terraform/deployment_01/networking.tf
++++ b/havoc/terraform/deployment_01/networking.tf
+@@ -7,7 +7,7 @@
+ resource "aws_vpc" "default" {
+   cidr_block = "${lookup(var.vpc_cidrs, "VPC")}"
+   tags {
+-    Name = "HAVOC-DEV"
++    Name = "${upper(format("%s-VPC", var.environment))}"
+   }
+ }
+ 
+@@ -24,7 +24,7 @@ resource "aws_subnet" "ext1" {
+   availability_zone       = "${lookup(var.zones, "primary")}"
+   map_public_ip_on_launch = true
+   tags {
+-    Name = "EXT1"
++    Name = "${upper(format("%s-EXT1", var.environment))}"
+   }
+ }
+ # SUBNET INTERNAL 01
+@@ -34,7 +34,7 @@ resource "aws_subnet" "int1" {
+   availability_zone       = "${aws_subnet.ext1.availability_zone}"
+   map_public_ip_on_launch = false
+   tags {
+-    Name = "INT1"
++    Name = "${upper(format("%s-INT1", var.environment))}"
+   }
+ }
+ 
+@@ -52,7 +52,7 @@ resource "aws_subnet" "ext2" {
+   availability_zone       = "${lookup(var.zones, "secondary")}"  
+   map_public_ip_on_launch = true
+   tags {
+-    Name = "EXT2"
++    Name = "${upper(format("%s-EXT2", var.environment))}"
+   }
+ }
+ # SUBNET INTERNAL 02
+@@ -62,7 +62,7 @@ resource "aws_subnet" "int2" {
+   availability_zone       = "${aws_subnet.ext2.availability_zone}"
+   map_public_ip_on_launch = false
+   tags {
+-    Name = "INT2"
++    Name = "${upper(format("%s-INT2", var.environment))}"
+   }
+ }
+ 
+@@ -77,7 +77,7 @@ resource "aws_subnet" "int2" {
+ resource "aws_internet_gateway" "default" {
+   vpc_id = "${aws_vpc.default.id}"
+   tags {
+-    Name = "HAVOC-DEV-IG"
++    Name = "${upper(format("%s-IG", var.environment))}"
+   }
+ }
+ 
+@@ -112,7 +112,7 @@ resource "aws_route_table" "nat1rt" {
+     nat_gateway_id = "${aws_nat_gateway.nat1.id}"
+   }
+   tags {
+-    Name = "NAT1-ROUTING"
++    Name = "${upper(format("%s-NAT1-RT", var.environment))}"
+   }
+ }
+ # ASSOCIATE our ROUTE TABLE to the INTERNAL SUBNET 01
+@@ -140,7 +140,7 @@ resource "aws_route_table" "nat2rt" {
+     nat_gateway_id = "${aws_nat_gateway.nat2.id}"
+   }
+   tags {
+-    Name = "NAT2-ROUTING"
++    Name = "${upper(format("%s-NAT2-RT", var.environment))}"
+   }
+ }
+ # ASSOCIATE our ROUTE TABLE to the INTERNAL SUBNET 02
+diff --git a/havoc/terraform/deployment_01/variables.tf b/havoc/terraform/deployment_01/variables.tf
+index 200f959..d0467a8 100644
+--- a/havoc/terraform/deployment_01/variables.tf
++++ b/havoc/terraform/deployment_01/variables.tf
+@@ -18,6 +18,11 @@ provider "aws" {
+   ======================================================
+ */
+ 
++variable "environment" {
++  description = "Name your work!"
++  default     = "HAVOC-DEV"
++}
++
+ variable "aws_region" {
+   description = "AWS REGION"
+   default     = "us-east-1"
+
+```
+
+Finally, we run `terraform plan` and see what changes the tool would do with our new work.
+
+```
+~ aws_autoscaling_group.default
+    tag.1637732627.key:                 "" => "Name"
+    tag.1637732627.propagate_at_launch: "" => "1"
+    tag.1637732627.value:               "" => "HAVOC-DEV-ASG"
+    tag.244279944.key:                  "Name" => ""
+    tag.244279944.propagate_at_launch:  "1" => "0"
+    tag.244279944.value:                "HAVOC-DEV" => ""
+
+~ aws_elb.default
+    tags.Name: "HAVOC-ELB" => "HAVOC-DEV-ELB"
+
+~ aws_route_table.nat1rt
+    tags.Name: "NAT1-ROUTING" => "HAVOC-DEV-NAT1-RT"
+
+~ aws_route_table.nat2rt
+    tags.Name: "NAT2-ROUTING" => "HAVOC-DEV-NAT2-RT"
+
+~ aws_security_group.ec2
+    tags.Name: "HAVOC-SG-EC2" => "HAVOC-DEV-EC2-SG"
+
+~ aws_security_group.elb
+    tags.Name: "HAVOC-SG-ELB" => "HAVOC-DEV-ELB-SG"
+
+~ aws_subnet.ext1
+    tags.Name: "EXT1" => "HAVOC-DEV-EXT1"
+
+~ aws_subnet.ext2
+    tags.Name: "EXT2" => "HAVOC-DEV-EXT2"
+
+~ aws_subnet.int1
+    tags.Name: "INT1" => "HAVOC-DEV-INT1"
+
+~ aws_subnet.int2
+    tags.Name: "INT2" => "HAVOC-DEV-INT2"
+
+~ aws_vpc.default
+    tags.Name: "HAVOC-DEV" => "HAVOC-DEV-VPC"
+```
+
+Voila!
+
+
 `more later...`
+
+
 
 [havoc]: https://github.com/dearing/havoc_server
 [hasicorp]: https://www.hashicorp.com/
