@@ -1,11 +1,7 @@
 # aws-playground
+*experiments happen here*
 
-*messing around with templates*
 
-nested
-------
-```
-havoc|
-   - vpc
-   - asg
-```
+- [HAVOC] - a terrible golang server and deployment handled with packer, terraform and cloudformation
+
+[havoc]: havoc/
