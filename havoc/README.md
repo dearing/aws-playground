@@ -253,6 +253,7 @@ index 200f959..d0467a8 100644
 Finally, we run `terraform plan` and see what changes the tool would do with our new work.
 
 ```
+# terraform plan
 ~ aws_autoscaling_group.default
     tag.1637732627.key:                 "" => "Name"
     tag.1637732627.propagate_at_launch: "" => "1"
@@ -292,7 +293,82 @@ Finally, we run `terraform plan` and see what changes the tool would do with our
     tags.Name: "HAVOC-DEV" => "HAVOC-DEV-VPC"
 ```
 
+Looking good.  This effectively demonstrates a tight `check your work as you go` model that I enjoy.  Something I miss from working with CFORM.   Lets push this up:
+
+```
+# terraform apply
+aws_eip.nat2: Refreshing state... (ID: eipalloc-eae69d8e)
+aws_vpc.default: Refreshing state... (ID: vpc-c286c5a6)
+aws_key_pair.default: Refreshing state... (ID: havoc)
+aws_eip.nat1: Refreshing state... (ID: eipalloc-bbe19adf)
+aws_subnet.ext1: Refreshing state... (ID: subnet-b8d21692)
+aws_internet_gateway.default: Refreshing state... (ID: igw-83468ee7)
+aws_security_group.elb: Refreshing state... (ID: sg-a393a7da)
+aws_subnet.ext2: Refreshing state... (ID: subnet-1ea41268)
+aws_security_group.ec2: Refreshing state... (ID: sg-9a93a7e3)
+aws_subnet.int1: Refreshing state... (ID: subnet-bed21694)
+aws_nat_gateway.nat1: Refreshing state... (ID: nat-01976423fc8b38d90)
+aws_route.default: Refreshing state... (ID: r-rtb-184a467c1080289494)
+aws_elb.default: Refreshing state... (ID: tf-lb-zpltk43k7nbfdb2qkxl7prlvzm)
+aws_nat_gateway.nat2: Refreshing state... (ID: nat-0d1707e8dec27c564)
+aws_subnet.int2: Refreshing state... (ID: subnet-1ca4126a)
+aws_launch_configuration.default: Refreshing state... (ID: terraform-ixxb7tbcirax3d7utq4rvyl7f4)
+aws_route_table.nat1rt: Refreshing state... (ID: rtb-6d373b09)
+aws_route_table.nat2rt: Refreshing state... (ID: rtb-6e373b0a)
+aws_route_table_association.nat1rta: Refreshing state... (ID: rtbassoc-8bfb73ec)
+aws_route_table_association.nat2rta: Refreshing state... (ID: rtbassoc-8cfb73eb)
+aws_route53_record.default: Refreshing state... (ID: Z2EBPSP8GXVCP4_havoc.racker.tech_A)
+aws_autoscaling_group.default: Refreshing state... (ID: tf-asg-p7hze3lrzzetzbqozpzi24lnqu)
+aws_autoscaling_schedule.default: Refreshing state... (ID: fresh and clean)
+aws_autoscaling_policy.step-down: Refreshing state... (ID: step down)
+aws_autoscaling_policy.step-up: Refreshing state... (ID: step up)
+aws_cloudwatch_metric_alarm.cool: Refreshing state... (ID: cooling-off)
+aws_cloudwatch_metric_alarm.hot: Refreshing state... (ID: heating-up)
+aws_vpc.default: Modifying...
+  tags.Name: "HAVOC-DEV" => "HAVOC-DEV-VPC"
+aws_vpc.default: Modifications complete
+aws_subnet.ext2: Modifying...
+  tags.Name: "EXT2" => "HAVOC-DEV-EXT2"
+aws_subnet.ext1: Modifying...
+  tags.Name: "EXT1" => "HAVOC-DEV-EXT1"
+aws_security_group.elb: Modifying...
+  tags.Name: "HAVOC-SG-ELB" => "HAVOC-DEV-ELB-SG"
+aws_subnet.ext2: Modifications complete
+aws_subnet.int2: Modifying...
+  tags.Name: "INT2" => "HAVOC-DEV-INT2"
+aws_route_table.nat2rt: Modifying...
+  tags.Name: "NAT2-ROUTING" => "HAVOC-DEV-NAT2-RT"
+aws_subnet.ext1: Modifications complete
+aws_route_table.nat1rt: Modifying...
+  tags.Name: "NAT1-ROUTING" => "HAVOC-DEV-NAT1-RT"
+aws_subnet.int1: Modifying...
+  tags.Name: "INT1" => "HAVOC-DEV-INT1"
+aws_subnet.int2: Modifications complete
+aws_security_group.elb: Modifications complete
+aws_elb.default: Modifying...
+  tags.Name: "HAVOC-ELB" => "HAVOC-DEV-ELB"
+aws_security_group.ec2: Modifying...
+  tags.Name: "HAVOC-SG-EC2" => "HAVOC-DEV-EC2-SG"
+aws_route_table.nat2rt: Modifications complete
+aws_subnet.int1: Modifications complete
+aws_route_table.nat1rt: Modifications complete
+aws_security_group.ec2: Modifications complete
+aws_elb.default: Modifications complete
+aws_autoscaling_group.default: Modifying...
+  tag.1637732627.key:                 "" => "Name"
+  tag.1637732627.propagate_at_launch: "" => "1"
+  tag.1637732627.value:               "" => "HAVOC-DEV-ASG"
+  tag.244279944.key:                  "Name" => ""
+  tag.244279944.propagate_at_launch:  "1" => "0"
+  tag.244279944.value:                "HAVOC-DEV" => ""
+aws_autoscaling_group.default: Modifications complete
+
+Apply complete! Resources: 0 added, 11 changed, 0 destroyed.
+
+```
+
 Voila!
+
 
 
 `more later...`
