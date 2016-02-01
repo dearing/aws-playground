@@ -47,7 +47,7 @@ resource "aws_route_table_association" "nat1rta" {
 ```
 
 
-One of the nicest things about using it is that all of the `.tf` configs are mashed together, not nested, making working with them a breeze and `organize-by-file` availiable.  Terraform further allows for modules, which are re-usable components that are organized with simple directories and mapped with a config.
+One of the nicest things about using it is that all of the `.tf` configs are mashed together, not nested, making working with them a breeze and `organize-by-file` a thing.  Terraform further allows for modules, which are re-usable components that are organized with simple directories and mapped with a config.
 
 `more later...`
 
